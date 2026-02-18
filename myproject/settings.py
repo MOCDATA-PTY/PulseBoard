@@ -24,7 +24,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-girjt0n_k=7!jk
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENVIRONMENT == 'development'
 
-ALLOWED_HOSTS = ['167.88.43.168', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['167.88.43.168', 'pulseboard.moc-pty.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
