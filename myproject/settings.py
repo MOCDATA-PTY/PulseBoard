@@ -10,22 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-girjt0n_k=7!jk3+1hk6timw&^o@v=7w_v4c_7zv_@c)&(hh4@'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-girjt0n_k=7!jk3+1hk6timw&^o@v=7w_v4c_7zv_@c)&(hh4@')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = ENVIRONMENT == 'development'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['167.88.43.168', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -73,12 +72,27 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if ENVIRONMENT == 'production':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'pulseboard',
+            'USER': 'pulseboard',
+            'PASSWORD': 'PulseB0ard@2026Secure',
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
