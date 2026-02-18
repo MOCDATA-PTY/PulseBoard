@@ -1,0 +1,169 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}Manage{% endblock %}
+{% block page_subtitle %}Users, roles, and departments{% endblock %}
+
+{% block content %}
+<style>
+    .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+        background: white; width: 480px; max-height: 85vh; overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 24px;
+    }
+    .modal h3 { margin: 0 0 16px; color: var(--brand); }
+    .modal-close {
+        float: right; background: none; border: none; font-size: 1.2rem;
+        cursor: pointer; color: #605e5c; padding: 0 4px; line-height: 1;
+    }
+    .modal-close:hover { color: #323130; }
+    .btn-delete {
+        background: white; color: #a4262c; border: 1px solid #a4262c;
+        padding: 4px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+        font-family: inherit;
+    }
+    .btn-delete:hover { background: #fde7e9; }
+</style>
+
+<!-- Action buttons -->
+<div style="display:flex;gap:10px;margin-bottom:24px;">
+    <button class="btn" onclick="openModal('user-modal')">+ Add User</button>
+    <button class="btn btn-outline" onclick="openModal('dept-modal')">+ Add Department</button>
+</div>
+
+<!-- Departments Grid -->
+<h2 style="margin-top:0;">Departments</h2>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
+    {% for dept in all_departments %}
+    <div class="card" style="margin-bottom:0;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            {% if dept.logo %}
+                <img src="{{ dept.logo.url }}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+            {% else %}
+                <div style="width:40px;height:40px;background:{{ dept.brand_primary }};border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1rem;">
+                    {{ dept.name.0 }}
+                </div>
+            {% endif %}
+            <div>
+                <h3 style="margin-bottom:0;">{{ dept.name }}</h3>
+                <p style="font-size:0.8rem;color:#605e5c;margin:0;">{{ dept.members.count }} member{{ dept.members.count|pluralize }}</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+            <a href="{% url 'admin_department_detail' dept.id %}" class="btn btn-sm btn-outline">View</a>
+            <a href="{% url 'admin_edit_department' dept.id %}" class="btn btn-sm btn-outline">Edit</a>
+            <form method="post" action="{% url 'delete_department' dept.id %}" style="display:inline;" onsubmit="return confirm('Delete department {{ dept.name }}? This will permanently delete ALL users and managers in this department. This cannot be undone.')">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <p style="color:#a19f9d;font-style:italic;grid-column:1/-1;text-align:center;padding:24px;">No departments yet.</p>
+    {% endfor %}
+</div>
+
+<!-- Users Table -->
+<h2>Users</h2>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Department</th>
+            <th>Position</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in all_users %}
+        <tr>
+            <td style="width:36px;padding-right:0;">
+                {% if u.profile.profile_picture %}
+                    <img src="{{ u.profile.profile_picture.url }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                    <div style="width:30px;height:30px;background:{% if u.is_staff %}var(--brand){% else %}var(--brand-accent){% endif %};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:0.65rem;">
+                        {{ u.first_name.0 }}{{ u.last_name.0 }}
+                    </div>
+                {% endif %}
+            </td>
+            <td style="font-weight:600;">{{ u.first_name }} {{ u.last_name }}</td>
+            <td>{{ u.username }}</td>
+            <td>
+                {% if u.profile.department %}
+                    {{ u.profile.department.name }}
+                {% else %}
+                    <span style="color:#a19f9d;font-style:italic;">Unassigned</span>
+                {% endif %}
+            </td>
+            <td>{{ u.profile.job_title|default:"--" }}</td>
+            <td>
+                {% if u.is_staff %}
+                    <span style="background:var(--brand);color:white;padding:2px 8px;font-size:0.7rem;font-weight:600;border-radius:2px;">Manager</span>
+                {% else %}
+                    <span style="font-size:0.8rem;color:#605e5c;">Employee</span>
+                {% endif %}
+            </td>
+            <td>
+                <div style="display:flex;gap:4px;">
+                    <a href="{% url 'admin_edit_user' u.id %}" class="btn btn-sm btn-outline">Edit</a>
+                    <a href="{% url 'employee_kpi' u.id %}" class="btn btn-sm btn-outline">KPIs</a>
+                    <form method="post" action="{% url 'delete_user' u.id %}" style="display:inline;" onsubmit="return confirm('Delete {{ u.first_name }} {{ u.last_name }}? This cannot be undone.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-delete btn-sm">Delete</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:#a19f9d;font-style:italic;padding:24px;">No users yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Add User Modal -->
+<div class="modal-overlay {% if show_modal == 'user' %}active{% endif %}" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('user-modal')">&times;</button>
+        <h3>Add User</h3>
+        <p style="font-size:0.8rem;color:#605e5c;margin-bottom:16px;">Check the Manager box to grant admin access.</p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_user">
+            {{ user_form.as_p }}
+            <button type="submit" style="margin-top:12px;">Create User</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Department Modal -->
+<div class="modal-overlay {% if show_modal == 'dept' %}active{% endif %}" id="dept-modal" onclick="if(event.target===this)closeModal('dept-modal')">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('dept-modal')">&times;</button>
+        <h3>Add Department</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_department">
+            <p>
+                <label for="dept_name">Department name:</label>
+                <input type="text" id="dept_name" name="dept_name" required>
+            </p>
+            <p>
+                <label for="dept_description">Description:</label>
+                <textarea id="dept_description" name="dept_description" rows="3" style="width:100%;padding:6px 8px;border:1px solid #8a8886;font-family:inherit;font-size:0.9rem;"></textarea>
+            </p>
+            <button type="submit" style="margin-top:12px;">Create Department</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+</script>
+{% endblock %}

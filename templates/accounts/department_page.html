@@ -1,0 +1,45 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}My Department{% endblock %}
+
+{% block content %}
+{% if department %}
+<h1>{{ department.name }}</h1>
+
+{% if department.description %}
+<div class="card">
+    <p>{{ department.description }}</p>
+</div>
+{% endif %}
+
+<h2>Team Members ({{ members.count }})</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Job Title</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td>{{ member.user.first_name }} {{ member.user.last_name|default:member.user.username }}</td>
+            <td>{{ member.job_title|default:"—" }}</td>
+            <td>{{ member.user.email|default:"—" }}</td>
+            <td>{{ member.phone_number|default:"—" }}</td>
+            <td><a href="{% url 'member_profile' member.user.id %}" class="btn btn-sm">View Profile</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<h1>My Department</h1>
+<div class="alert alert-error">
+    <p>You have not been assigned to a department yet. Please contact an administrator.</p>
+</div>
+{% endif %}
+{% endblock %}

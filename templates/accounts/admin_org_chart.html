@@ -1,0 +1,148 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}Organization Chart{% endblock %}
+{% block page_subtitle %}Company hierarchy and department structure{% endblock %}
+
+{% block content %}
+<style>
+    .org-tree { display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+    .org-root {
+        background: #054B70; color: white; padding: 14px 32px;
+        font-weight: 700; font-size: 1rem; text-align: center;
+        border-radius: 4px; position: relative; margin-bottom: 40px;
+    }
+    .org-root::after {
+        content: ''; position: absolute; bottom: -40px; left: 50%;
+        width: 2px; height: 40px; background: #8a8886;
+    }
+    .org-depts {
+        display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
+        position: relative; padding-top: 0;
+    }
+    .org-depts::before {
+        content: ''; position: absolute; top: 0;
+        left: 12%; right: 12%; height: 2px; background: #8a8886;
+    }
+    .org-dept {
+        min-width: 220px; max-width: 280px; flex: 1;
+        position: relative; padding-top: 30px;
+    }
+    .org-dept::before {
+        content: ''; position: absolute; top: 0; left: 50%;
+        width: 2px; height: 30px; background: #8a8886;
+    }
+    .org-dept-header {
+        background: #8CB7C4; color: white; padding: 10px 16px;
+        font-weight: 700; font-size: 0.9rem; text-align: center;
+        border-radius: 4px 4px 0 0;
+    }
+    .org-dept-header span { display: block; font-size: 0.7rem; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+    .org-dept-body {
+        background: white; border: 1px solid #edebe9; border-top: none;
+        border-radius: 0 0 4px 4px; padding: 0;
+    }
+    .org-person {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 12px; border-bottom: 1px solid #f3f2f1;
+        text-decoration: none; color: #323130; font-size: 0.82rem;
+    }
+    .org-person:last-child { border-bottom: none; }
+    .org-person:hover { background: #f3f2f1; }
+    .org-avatar {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 600; font-size: 0.65rem; color: white; flex-shrink: 0;
+    }
+    .org-avatar.manager { background: #054B70; }
+    .org-avatar.employee { background: #a19f9d; }
+    .org-avatar img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    .org-person-info { flex: 1; min-width: 0; }
+    .org-person-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .org-person-title { font-size: 0.7rem; color: #605e5c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .org-badge {
+        font-size: 0.6rem; font-weight: 700; padding: 1px 6px;
+        border-radius: 2px; flex-shrink: 0;
+    }
+    .org-badge.mgr { background: #054B70; color: white; }
+    .org-empty { padding: 16px; text-align: center; color: #a19f9d; font-size: 0.8rem; font-style: italic; }
+</style>
+
+<div class="org-tree">
+    <div class="org-root">Magnum Opus Consultants</div>
+
+    <div class="org-depts">
+        {% for d in dept_data %}
+        <div class="org-dept">
+            <a href="{% url 'dept_org_chart' d.department.id %}" class="org-dept-header" style="text-decoration:none;color:white;display:block;">
+                {{ d.department.name }}
+                <span>{{ d.total }} member{{ d.total|pluralize }}</span>
+            </a>
+            <div class="org-dept-body">
+                {% if d.managers or d.employees %}
+                    {% for m in d.managers %}
+                    <a href="{% url 'employee_kpi' m.user.id %}" class="org-person">
+                        <div class="org-avatar manager">
+                            {% if m.profile.profile_picture %}
+                                <img src="{{ m.profile.profile_picture.url }}">
+                            {% else %}
+                                {{ m.user.first_name.0 }}{{ m.user.last_name.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="org-person-info">
+                            <div class="org-person-name">{{ m.user.first_name }} {{ m.user.last_name }}</div>
+                            <div class="org-person-title">{{ m.profile.job_title|default:"Manager" }}</div>
+                        </div>
+                        <span class="org-badge mgr">MGR</span>
+                    </a>
+                    {% endfor %}
+                    {% for e in d.employees %}
+                    <a href="{% url 'employee_kpi' e.user.id %}" class="org-person">
+                        <div class="org-avatar employee">
+                            {% if e.profile.profile_picture %}
+                                <img src="{{ e.profile.profile_picture.url }}">
+                            {% else %}
+                                {{ e.user.first_name.0 }}{{ e.user.last_name.0 }}
+                            {% endif %}
+                        </div>
+                        <div class="org-person-info">
+                            <div class="org-person-name">{{ e.user.first_name }} {{ e.user.last_name }}</div>
+                            <div class="org-person-title">{{ e.profile.job_title|default:"Employee" }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="org-empty">No members</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if unassigned %}
+        <div class="org-dept">
+            <div class="org-dept-header" style="background:#a19f9d;">
+                Unassigned
+                <span>{{ unassigned.count }} member{{ unassigned.count|pluralize }}</span>
+            </div>
+            <div class="org-dept-body">
+                {% for p in unassigned %}
+                <a href="{% url 'employee_kpi' p.user.id %}" class="org-person">
+                    <div class="org-avatar employee">
+                        {% if p.profile_picture %}
+                            <img src="{{ p.profile_picture.url }}">
+                        {% else %}
+                            {{ p.user.first_name.0 }}{{ p.user.last_name.0 }}
+                        {% endif %}
+                    </div>
+                    <div class="org-person-info">
+                        <div class="org-person-name">{{ p.user.first_name }} {{ p.user.last_name }}</div>
+                        <div class="org-person-title">{{ p.job_title|default:"Unassigned" }}</div>
+                    </div>
+                    {% if p.user.is_staff %}<span class="org-badge mgr">MGR</span>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

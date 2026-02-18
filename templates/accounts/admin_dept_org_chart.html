@@ -1,0 +1,652 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block body_class %}no-sidebar{% endblock %}
+{% block page_title %}{{ department.name }} — Org Chart{% endblock %}
+{% block page_subtitle %}{{ member_count }} member{{ member_count|pluralize }} — drag people to reorganize the hierarchy{% endblock %}
+
+{% block content %}
+<style>
+    /* ── Toolbar ── */
+    .oc-toolbar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+    .oc-toolbar a { text-decoration: none; }
+    .oc-view-toggle {
+        display: flex; border: 1px solid #8a8886; overflow: hidden;
+    }
+    .oc-view-btn {
+        padding: 5px 14px; font-size: 0.8rem; font-weight: 600;
+        background: white !important; border: none !important; cursor: pointer; color: #323130 !important;
+        font-family: inherit;
+    }
+    .oc-view-btn:not(:last-child) { border-right: 1px solid #8a8886 !important; }
+    .oc-view-btn.active { background: #054B70 !important; color: white !important; }
+    .oc-view-btn:hover:not(.active) { background: #f3f2f1 !important; }
+    .oc-zoom-controls {
+        display: flex; align-items: center; gap: 4px;
+        margin-left: auto;
+    }
+    .oc-zoom-btn {
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        background: white !important; border: 1px solid #8a8886 !important; cursor: pointer;
+        font-size: 1rem; font-weight: 700; color: #323130 !important; padding: 0;
+    }
+    .oc-zoom-btn:hover { background: #f3f2f1 !important; border-color: #054B70 !important; }
+    .oc-zoom-label {
+        font-size: 0.78rem; font-weight: 600; color: #605e5c;
+        min-width: 42px; text-align: center;
+    }
+
+    /* ── Viewport (scrollable + pannable) ── */
+    .oc-viewport {
+        overflow: hidden; border: 1px solid #edebe9; background: #faf9f8;
+        position: relative; min-height: 400px;
+        max-height: calc(100vh - 240px);
+        cursor: grab;
+    }
+    .oc-viewport.panning { cursor: grabbing; }
+    .oc-viewport-inner {
+        transform-origin: 0 0; padding: 24px; display: inline-block;
+    }
+
+    /* ── Vertical indented list ── */
+    .vt { list-style: none; padding: 0; margin: 0; }
+    .vt .vt { padding-left: 0; margin-left: 28px; border-left: 2px solid #d2d0ce; }
+    .vt-item { position: relative; }
+    .vt .vt > .vt-item::before {
+        content: ''; position: absolute; top: 22px; left: -28px;
+        width: 28px; height: 0; border-top: 2px solid #d2d0ce;
+    }
+
+    .vt-card {
+        display: flex; align-items: center; gap: 12px;
+        padding: 8px 12px; margin: 4px 0; background: white;
+        border: 2px solid #edebe9; cursor: grab; user-select: none;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        white-space: nowrap;
+    }
+    .vt-card:hover { border-color: #8CB7C4; box-shadow: 0 1px 6px rgba(5,75,112,0.1); }
+    .vt-card.dragging { opacity: 0.3; }
+    .vt-card.drop-target { border-color: #054B70; background: #e8f0f5; box-shadow: 0 0 0 3px rgba(5,75,112,0.2); }
+
+    .vt-avatar {
+        width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.7rem; color: white;
+    }
+    .vt-avatar img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .vt-info { flex: 1; min-width: 0; }
+    .vt-name { font-weight: 600; font-size: 0.85rem; }
+    .vt-title { font-size: 0.72rem; color: #605e5c; }
+    .vt-meta { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .vt-badge {
+        font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 2px;
+    }
+    .vt-badge.mgr { background: #054B70; color: white; }
+    .vt-badge.emp { background: #f3f2f1; color: #605e5c; }
+    .vt-count { font-size: 0.65rem; color: #8CB7C4; font-weight: 600; }
+    .vt-toggle {
+        background: none !important; border: 1px solid #d2d0ce !important; width: 20px; height: 20px;
+        font-size: 0.65rem; cursor: pointer; display: flex; align-items: center;
+        justify-content: center; flex-shrink: 0; color: #605e5c !important; padding: 0;
+        border-radius: 2px;
+    }
+    .vt-toggle:hover { background: #f3f2f1 !important; border-color: #054B70 !important; color: #054B70 !important; }
+
+    /* ══════════════════════════════════════════════════
+       Horizontal tree (classic org chart)
+       ══════════════════════════════════════════════════ */
+    .ht { display: flex; flex-direction: column; align-items: center; }
+    .ht-node { display: flex; flex-direction: column; align-items: center; }
+    .ht-card {
+        background: white; border: 2px solid #edebe9; padding: 10px 16px;
+        text-align: center; min-width: 140px; max-width: 180px;
+        cursor: grab; user-select: none;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .ht-card:hover { border-color: #8CB7C4; box-shadow: 0 2px 8px rgba(5,75,112,0.12); }
+    .ht-card.dragging { opacity: 0.3; }
+    .ht-card.drop-target { border-color: #054B70; background: #e8f0f5; box-shadow: 0 0 0 3px rgba(5,75,112,0.2); }
+    .ht-avatar {
+        width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 6px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.8rem; color: white;
+    }
+    .ht-avatar img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+    .ht-name { font-weight: 600; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ht-jobtitle { font-size: 0.68rem; color: #605e5c; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ht-badge-row { margin-top: 4px; }
+
+    /* Connector lines */
+    .ht-children {
+        display: flex; justify-content: center; gap: 0;
+        position: relative; padding-top: 24px;
+    }
+    .ht-children::before {
+        content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 24px;
+        background: #d2d0ce;
+    }
+    .ht-children > .ht-node { position: relative; padding-top: 24px; }
+    .ht-children > .ht-node::before {
+        content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 24px;
+        background: #d2d0ce;
+    }
+    /* Horizontal bar across siblings */
+    .ht-children.multi::after {
+        content: ''; position: absolute; top: 24px;
+        height: 2px; background: #d2d0ce;
+    }
+    .ht-vline {
+        position: relative; display: flex; flex-direction: column; align-items: center;
+    }
+    .ht-vline::before {
+        content: ''; position: absolute; top: -24px; left: 50%;
+        width: 2px; height: 24px; background: #d2d0ce;
+    }
+
+    .ht-collapse-btn {
+        display: inline-block; background: white !important; border: 1px solid #d2d0ce !important;
+        width: 18px; height: 18px; font-size: 0.6rem; cursor: pointer;
+        line-height: 16px; text-align: center; margin-top: 4px; border-radius: 50%;
+        color: #605e5c !important; padding: 0;
+    }
+    .ht-collapse-btn:hover { border-color: #054B70 !important; color: #054B70 !important; }
+
+    /* ── Pool ── */
+    .oc-pool { margin-top: 24px; border-top: 2px solid #edebe9; padding-top: 16px; }
+    .oc-pool h3 { margin: 0 0 12px; font-size: 0.9rem; }
+    .oc-pool-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .oc-pool-item {
+        background: white; border: 2px solid #edebe9; padding: 8px 14px;
+        display: flex; align-items: center; gap: 8px;
+        cursor: grab; user-select: none; font-size: 0.8rem;
+        transition: border-color 0.15s;
+    }
+    .oc-pool-item:hover { border-color: #8CB7C4; }
+    .oc-pool-item.dragging { opacity: 0.3; }
+    .oc-pool-avatar {
+        width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 600; font-size: 0.6rem; color: white;
+    }
+    .oc-pool-avatar img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+    /* ── Remove zone ── */
+    .oc-remove-zone {
+        display: none; position: fixed; bottom: 0; left: 0; right: 0;
+        background: #fde7e9; color: #a4262c; padding: 14px 32px;
+        text-align: center; font-weight: 600; font-size: 0.85rem;
+        z-index: 50; border-top: 2px solid #a4262c;
+    }
+    .oc-remove-zone.active { display: block; }
+    .oc-remove-zone.drag-hover { background: #f5c6cb; }
+
+    /* ── Toast ── */
+    .oc-toast {
+        position: fixed; bottom: 24px; right: 24px; background: #054B70;
+        color: white; padding: 10px 20px; font-size: 0.85rem; font-weight: 600;
+        z-index: 200; opacity: 0; transition: opacity 0.3s; border-radius: 4px;
+    }
+    .oc-toast.show { opacity: 1; }
+
+    @media (max-width: 768px) {
+        .vt .vt { margin-left: 20px; }
+        .vt .vt > .vt-item::before { width: 20px; left: -20px; }
+        .vt-card { padding: 6px 10px; gap: 8px; }
+        .vt-avatar { width: 30px; height: 30px; font-size: 0.6rem; }
+        .vt-avatar img { width: 30px; height: 30px; }
+        .vt-name { font-size: 0.78rem; }
+        .vt-title { font-size: 0.65rem; }
+        .oc-pool-item { padding: 6px 10px; }
+        .ht-card { min-width: 110px; max-width: 140px; padding: 8px 10px; }
+        .ht-avatar { width: 34px; height: 34px; font-size: 0.7rem; }
+        .ht-avatar img { width: 34px; height: 34px; }
+        .ht-name { font-size: 0.75rem; }
+    }
+</style>
+
+<div class="oc-toolbar">
+    <a href="{% url 'admin_department_detail' department.id %}" class="btn btn-sm btn-outline">&larr; {{ department.name }}</a>
+    <a href="{% url 'admin_center' %}" class="btn btn-sm btn-outline">Dashboard</a>
+    <a href="{% url 'org_chart' %}" class="btn btn-sm btn-outline">All Departments</a>
+
+    <div class="oc-view-toggle">
+        <button class="oc-view-btn active" id="btnList" title="List view">List</button>
+        <button class="oc-view-btn" id="btnTree" title="Tree view">Tree</button>
+    </div>
+
+    <div class="oc-zoom-controls">
+        <button class="oc-zoom-btn" id="zoomOut" title="Zoom out">&minus;</button>
+        <span class="oc-zoom-label" id="zoomLabel">100%</span>
+        <button class="oc-zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="oc-zoom-btn" id="zoomReset" title="Reset zoom" style="font-size:0.7rem;width:auto;padding:0 8px;">Reset</button>
+    </div>
+</div>
+
+<div class="oc-viewport" id="viewport">
+    <div class="oc-viewport-inner" id="viewportInner">
+        <div id="orgTree"></div>
+    </div>
+</div>
+
+<div class="oc-pool" id="unassignedPool">
+    <h3>Unassigned — drag onto a person above to assign</h3>
+    <div class="oc-pool-grid" id="poolGrid"></div>
+</div>
+
+<div class="oc-remove-zone" id="removeZone">Drop here to remove from hierarchy</div>
+<div class="oc-toast" id="toast"></div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const REORDER_URL = "{% url 'reorder_hierarchy' department.id %}";
+const KPI_BASE = "{% url 'employee_kpi' 999999 %}".replace('/999999/', '/');
+let treeData = {{ tree_json|safe }};
+let unassignedData = [
+    {% for m in unassigned %}
+    { id:{{ m.id }}, user_id:{{ m.user.id }}, first_name:"{{ m.user.first_name|escapejs }}", last_name:"{{ m.user.last_name|escapejs }}", job_title:"{{ m.job_title|default:'No title'|escapejs }}", is_staff:{{ m.user.is_staff|yesno:"true,false" }}, has_picture:{{ m.profile_picture|yesno:"true,false" }}, picture_url:"{% if m.profile_picture %}{{ m.profile_picture.url }}{% endif %}", initials:"{{ m.user.first_name.0 }}{{ m.user.last_name.0 }}", children:[] },
+    {% endfor %}
+];
+
+let dragNode = null, dragSource = null;
+const collapsed = new Set();
+let viewMode = 'list'; // 'list' or 'tree'
+
+// ── Zoom + Pan (transform-based) ──
+let zoomLevel = 1, panX = 0, panY = 0;
+const ZOOM_STEP = 0.1;
+const ZOOM_MIN = 0.2;
+const ZOOM_MAX = 2;
+const inner = document.getElementById('viewportInner');
+const viewport = document.getElementById('viewport');
+
+function applyTransform() {
+    inner.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+function setZoom(level) {
+    zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
+    applyTransform();
+}
+
+function resetView() {
+    zoomLevel = 1; panX = 0; panY = 0;
+    applyTransform();
+}
+
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoomLevel + ZOOM_STEP));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoomLevel - ZOOM_STEP));
+document.getElementById('zoomReset').addEventListener('click', resetView);
+
+viewport.addEventListener('wheel', e => {
+    if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        setZoom(zoomLevel + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    } else {
+        e.preventDefault();
+        if (e.shiftKey) {
+            panX -= e.deltaY;
+        } else {
+            panX -= e.deltaX || 0;
+            panY -= e.deltaY || 0;
+        }
+        applyTransform();
+    }
+}, { passive: false });
+
+// ── Click-and-drag panning ──
+let isPanning = false, panStartX = 0, panStartY = 0, panOriginX = 0, panOriginY = 0;
+
+viewport.addEventListener('mousedown', e => {
+    const card = e.target.closest('.vt-card, .ht-card, .oc-pool-item, button, a');
+    if (card) return;
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panOriginX = panX;
+    panOriginY = panY;
+    viewport.classList.add('panning');
+    e.preventDefault();
+});
+
+document.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    panX = panOriginX + (e.clientX - panStartX);
+    panY = panOriginY + (e.clientY - panStartY);
+    applyTransform();
+});
+
+document.addEventListener('mouseup', () => {
+    if (isPanning) {
+        isPanning = false;
+        viewport.classList.remove('panning');
+    }
+});
+
+// ── View toggle ──
+document.getElementById('btnList').addEventListener('click', () => { viewMode = 'list'; updateToggle(); switchView(); });
+document.getElementById('btnTree').addEventListener('click', () => { viewMode = 'tree'; updateToggle(); switchView(); });
+function switchView() {
+    render();
+    resetView();
+}
+function updateToggle() {
+    document.getElementById('btnList').classList.toggle('active', viewMode === 'list');
+    document.getElementById('btnTree').classList.toggle('active', viewMode === 'tree');
+}
+
+// ── API ──
+function apiCall(data) {
+    return fetch(REORDER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify(data)
+    }).then(r => r.json());
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Shared drag handlers for a card ──
+function attachDrag(el, node, source) {
+    el.addEventListener('dragstart', e => {
+        e.stopPropagation();
+        dragNode = node; dragSource = source;
+        el.classList.add('dragging');
+        document.getElementById('removeZone').classList.add('active');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => {
+        el.classList.remove('dragging');
+        document.querySelectorAll('.vt-card,.ht-card').forEach(c => c.classList.remove('drop-target'));
+        document.getElementById('removeZone').classList.remove('active', 'drag-hover');
+    });
+    el.addEventListener('dragover', e => {
+        e.preventDefault(); e.stopPropagation();
+        if (dragNode && dragNode.id !== node.id) el.classList.add('drop-target');
+    });
+    el.addEventListener('dragleave', () => el.classList.remove('drop-target'));
+    el.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation();
+        el.classList.remove('drop-target');
+        if (!dragNode || dragNode.id === node.id) return;
+        if (isDescendant(dragNode, node.id)) return;
+        moveNode(dragNode, node);
+    });
+    el.addEventListener('dblclick', () => { window.location.href = KPI_BASE + node.user_id + '/'; });
+}
+
+// ══════════════════════════════════════════════
+// LIST VIEW (vertical indented)
+// ══════════════════════════════════════════════
+function renderList() {
+    const container = document.getElementById('orgTree');
+    if (treeData.length === 0 && unassignedData.length === 0) {
+        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this department.</p>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    ul.className = 'vt';
+    treeData.forEach(n => ul.appendChild(renderListNode(n)));
+    container.innerHTML = '';
+    container.appendChild(ul);
+}
+
+function renderListNode(node) {
+    const li = document.createElement('li');
+    li.className = 'vt-item';
+
+    const card = document.createElement('div');
+    card.className = 'vt-card';
+    card.draggable = true;
+    card.dataset.id = node.id;
+
+    const avatarBg = node.is_staff ? '#054B70' : '#8CB7C4';
+    const avatarContent = node.has_picture ? `<img src="${node.picture_url}">` : node.initials;
+    const badgeClass = node.is_staff ? 'mgr' : 'emp';
+    const badgeText = node.is_staff ? 'Manager' : 'Employee';
+    const childCount = countAll(node) - 1;
+    const hasKids = node.children && node.children.length > 0;
+    const isCollapsed = collapsed.has(node.id);
+
+    let html = '';
+    if (hasKids) {
+        html += `<button class="vt-toggle" data-toggle="${node.id}">${isCollapsed ? '+' : '\u2212'}</button>`;
+    } else {
+        html += '<div style="width:20px;flex-shrink:0;"></div>';
+    }
+    html += `<div class="vt-avatar" style="background:${avatarBg}">${avatarContent}</div>`;
+    html += `<div class="vt-info"><div class="vt-name">${node.first_name} ${node.last_name}</div><div class="vt-title">${node.job_title}</div></div>`;
+    html += `<div class="vt-meta">`;
+    if (childCount > 0) html += `<span class="vt-count">${childCount} report${childCount !== 1 ? 's' : ''}</span>`;
+    html += `<span class="vt-badge ${badgeClass}">${badgeText}</span></div>`;
+    card.innerHTML = html;
+
+    const toggleBtn = card.querySelector('[data-toggle]');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (collapsed.has(node.id)) collapsed.delete(node.id); else collapsed.add(node.id);
+            render();
+        });
+    }
+
+    attachDrag(card, node, 'tree');
+    li.appendChild(card);
+
+    if (hasKids && !isCollapsed) {
+        const childUl = document.createElement('ul');
+        childUl.className = 'vt';
+        node.children.forEach(ch => childUl.appendChild(renderListNode(ch)));
+        li.appendChild(childUl);
+    }
+    return li;
+}
+
+// ══════════════════════════════════════════════
+// TREE VIEW (horizontal classic org chart)
+// ══════════════════════════════════════════════
+function renderHTree() {
+    const container = document.getElementById('orgTree');
+    if (treeData.length === 0 && unassignedData.length === 0) {
+        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this department.</p>';
+        return;
+    }
+    container.innerHTML = '';
+    // If multiple roots, wrap them
+    if (treeData.length === 1) {
+        container.appendChild(renderHNode(treeData[0], true));
+    } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'ht';
+        // Create a virtual department header
+        const deptCard = document.createElement('div');
+        deptCard.style.cssText = 'background:#054B70;color:white;padding:10px 24px;font-weight:700;font-size:0.9rem;text-align:center;border-radius:4px;';
+        deptCard.textContent = '{{ department.name|escapejs }}';
+        wrap.appendChild(deptCard);
+
+        if (treeData.length > 0) {
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'ht-children' + (treeData.length > 1 ? ' multi' : '');
+            treeData.forEach(n => {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'ht-node';
+                nodeDiv.appendChild(renderHNode(n, false));
+                childrenDiv.appendChild(nodeDiv);
+            });
+            // Calculate the horizontal bar for multi children
+            if (treeData.length > 1) positionBar(childrenDiv);
+            wrap.appendChild(childrenDiv);
+        }
+        container.appendChild(wrap);
+    }
+}
+
+function renderHNode(node, isRoot) {
+    const wrap = document.createElement('div');
+    wrap.className = 'ht';
+
+    const card = document.createElement('div');
+    card.className = 'ht-card';
+    card.draggable = true;
+    card.dataset.id = node.id;
+
+    const avatarBg = node.is_staff ? '#054B70' : '#8CB7C4';
+    const avatarContent = node.has_picture ? `<img src="${node.picture_url}">` : node.initials;
+    const badgeClass = node.is_staff ? 'mgr' : 'emp';
+    const badgeText = node.is_staff ? 'MGR' : 'EMP';
+    const hasKids = node.children && node.children.length > 0;
+    const isCollapsed = collapsed.has(node.id);
+
+    let html = `<div class="ht-avatar" style="background:${avatarBg}">${avatarContent}</div>`;
+    html += `<div class="ht-name">${node.first_name} ${node.last_name}</div>`;
+    html += `<div class="ht-jobtitle">${node.job_title}</div>`;
+    html += `<div class="ht-badge-row"><span class="vt-badge ${badgeClass}">${badgeText}</span></div>`;
+    card.innerHTML = html;
+
+    attachDrag(card, node, 'tree');
+    wrap.appendChild(card);
+
+    if (hasKids) {
+        const colBtn = document.createElement('button');
+        colBtn.className = 'ht-collapse-btn';
+        colBtn.textContent = isCollapsed ? '+' : '\u2212';
+        colBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (collapsed.has(node.id)) collapsed.delete(node.id); else collapsed.add(node.id);
+            render();
+        });
+        wrap.appendChild(colBtn);
+    }
+
+    if (hasKids && !isCollapsed) {
+        const childrenDiv = document.createElement('div');
+        childrenDiv.className = 'ht-children' + (node.children.length > 1 ? ' multi' : '');
+        node.children.forEach(ch => {
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'ht-node';
+            nodeDiv.appendChild(renderHNode(ch, false));
+            childrenDiv.appendChild(nodeDiv);
+        });
+        if (node.children.length > 1) positionBar(childrenDiv);
+        wrap.appendChild(childrenDiv);
+    }
+
+    return wrap;
+}
+
+function positionBar(childrenDiv) {
+    // After render, set the horizontal bar to span first-to-last child centers
+    requestAnimationFrame(() => {
+        const kids = childrenDiv.querySelectorAll(':scope > .ht-node');
+        if (kids.length < 2) return;
+        const first = kids[0], last = kids[kids.length - 1];
+        const parentRect = childrenDiv.getBoundingClientRect();
+        const l = first.getBoundingClientRect().left + first.getBoundingClientRect().width / 2 - parentRect.left;
+        const r = last.getBoundingClientRect().left + last.getBoundingClientRect().width / 2 - parentRect.left;
+        childrenDiv.style.setProperty('--bar-left', l + 'px');
+        childrenDiv.style.setProperty('--bar-right', (parentRect.width - r) + 'px');
+        // Use inline styles since CSS custom properties need the ::after to read them
+        const style = childrenDiv.querySelector('style') || document.createElement('style');
+        // Use a unique id approach
+        if (!childrenDiv.id) childrenDiv.id = 'hc_' + Math.random().toString(36).slice(2, 8);
+        style.textContent = `#${childrenDiv.id}.multi::after { left: ${l}px; right: ${parentRect.width - r}px; }`;
+        if (!style.parentNode) childrenDiv.appendChild(style);
+    });
+}
+
+// ══════════════════════════════════════════════
+// POOL + SHARED
+// ══════════════════════════════════════════════
+function renderPool() {
+    const grid = document.getElementById('poolGrid');
+    grid.innerHTML = '';
+    const pool = document.getElementById('unassignedPool');
+    if (unassignedData.length === 0) { pool.style.display = 'none'; return; }
+    pool.style.display = '';
+
+    unassignedData.forEach(node => {
+        const div = document.createElement('div');
+        div.className = 'oc-pool-item'; div.draggable = true; div.dataset.id = node.id;
+        const bg = node.is_staff ? '#054B70' : '#8CB7C4';
+        const av = node.has_picture ? `<img src="${node.picture_url}">` : node.initials;
+        div.innerHTML = `<div class="oc-pool-avatar" style="background:${bg}">${av}</div><div><div style="font-weight:600;">${node.first_name} ${node.last_name}</div><div style="font-size:0.7rem;color:#605e5c;">${node.job_title}</div></div>`;
+
+        div.addEventListener('dragstart', e => {
+            e.stopPropagation(); dragNode = node; dragSource = 'pool';
+            div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+        });
+        div.addEventListener('dragend', () => {
+            div.classList.remove('dragging');
+            document.querySelectorAll('.vt-card,.ht-card').forEach(c => c.classList.remove('drop-target'));
+        });
+        div.addEventListener('dblclick', () => { window.location.href = KPI_BASE + node.user_id + '/'; });
+        grid.appendChild(div);
+    });
+}
+
+function render() {
+    if (viewMode === 'list') renderList(); else renderHTree();
+    renderPool();
+}
+
+// ── Remove zone ──
+const removeZone = document.getElementById('removeZone');
+removeZone.addEventListener('dragover', e => { e.preventDefault(); removeZone.classList.add('drag-hover'); });
+removeZone.addEventListener('dragleave', () => removeZone.classList.remove('drag-hover'));
+removeZone.addEventListener('drop', e => {
+    e.preventDefault(); removeZone.classList.remove('drag-hover', 'active');
+    if (!dragNode || dragSource !== 'tree') return;
+    removeFromTree(treeData, dragNode.id);
+    flattenChildren(dragNode).forEach(c => unassignedData.push({...c, children: []}));
+    unassignedData.push({...dragNode, children: []});
+    const promises = [apiCall({ action: 'set_parent', profile_id: dragNode.id, parent_id: null })];
+    flattenChildren(dragNode).forEach(c => promises.push(apiCall({ action: 'set_parent', profile_id: c.id, parent_id: null })));
+    Promise.all(promises).then(() => {
+        showToast(`${dragNode.first_name} removed from hierarchy`);
+        dragNode = null; render();
+    });
+});
+
+// ── Helpers ──
+function countAll(n) { let c = 1; if (n.children) n.children.forEach(ch => c += countAll(ch)); return c; }
+function isDescendant(n, id) { if (!n.children) return false; for (const ch of n.children) { if (ch.id === id || isDescendant(ch, id)) return true; } return false; }
+function removeFromTree(nodes, id) { for (let i = 0; i < nodes.length; i++) { if (nodes[i].id === id) { nodes.splice(i,1); return true; } if (removeFromTree(nodes[i].children, id)) return true; } return false; }
+function flattenChildren(n) { let r = []; if (n.children) n.children.forEach(ch => { r.push(ch); r = r.concat(flattenChildren(ch)); }); return r; }
+function findNode(nodes, id) { for (const n of nodes) { if (n.id === id) return n; const f = findNode(n.children, id); if (f) return f; } return null; }
+
+function moveNode(source, target) {
+    removeFromTree(treeData, source.id);
+    const pi = unassignedData.findIndex(n => n.id === source.id);
+    if (pi !== -1) unassignedData.splice(pi, 1);
+    const t = findNode(treeData, target.id);
+    if (t) t.children.push(source);
+    apiCall({ action: 'set_parent', profile_id: source.id, parent_id: target.id }).then(d => {
+        if (d.status === 'ok') showToast(`${source.first_name} now reports to ${target.first_name}`);
+    });
+    dragNode = null; render();
+}
+
+// ── Drop on viewport = make root ──
+document.getElementById('orgTree').addEventListener('dragover', e => { if (dragSource === 'pool') e.preventDefault(); });
+document.getElementById('orgTree').addEventListener('drop', e => {
+    if (dragSource !== 'pool' || !dragNode) return;
+    if (e.target.closest('.vt-card,.ht-card')) return;
+    e.preventDefault();
+    const pi = unassignedData.findIndex(n => n.id === dragNode.id);
+    if (pi !== -1) unassignedData.splice(pi, 1);
+    treeData.push(dragNode);
+    apiCall({ action: 'set_parent', profile_id: dragNode.id, parent_id: null }).then(() => {
+        showToast(`${dragNode.first_name} added as root`); dragNode = null; render();
+    });
+});
+
+render();
+applyTransform();
+</script>
+{% endblock %}

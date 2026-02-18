@@ -1,0 +1,22 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}Add Department{% endblock %}
+{% block page_subtitle %}Create a new department{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_center' %}" class="back-link">&larr; Back to Dashboard</a>
+<div class="card" style="margin-top:16px;max-width:500px;">
+    <form method="post">
+        {% csrf_token %}
+        <p>
+            <label for="name">Department name:</label>
+            <input type="text" id="name" name="name" required>
+        </p>
+        <p>
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" rows="3" style="width:100%;padding:6px 8px;border:1px solid #8a8886;font-family:inherit;font-size:0.9rem;"></textarea>
+        </p>
+        <button type="submit" style="margin-top:12px;">Create Department</button>
+    </form>
+</div>
+{% endblock %}

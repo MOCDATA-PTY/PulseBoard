@@ -1,0 +1,31 @@
+{% extends "accounts/dept_magnum/base.html" %}
+
+{% block title %}{{ target_user.first_name|default:target_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<h1>{{ target_user.first_name|default:target_user.username }} {{ target_user.last_name }}</h1>
+
+<div class="card">
+    <h3>Personal Information</h3>
+    <p><strong>Full Name:</strong> {{ target_user.first_name }} {{ target_user.last_name }}</p>
+    <p><strong>Username:</strong> {{ target_user.username }}</p>
+    <p><strong>Email:</strong> {{ target_user.email|default:"Not provided" }}</p>
+    <p><strong>Phone:</strong> {{ target_profile.phone_number|default:"Not provided" }}</p>
+</div>
+
+<div class="card">
+    <h3>Work Information</h3>
+    <p><strong>Job Title:</strong> {{ target_profile.job_title|default:"Not set" }}</p>
+    <p><strong>Department:</strong> {{ target_profile.department.name|default:"Unassigned" }}</p>
+    <p><strong>Member Since:</strong> {{ target_user.date_joined|date:"F j, Y" }}</p>
+</div>
+
+{% if user.is_staff %}
+<p style="margin-top:1rem;">
+    <a href="{% url 'employee_kpi' target_user.id %}" class="btn">View KPIs</a>
+</p>
+<p style="margin-top:1rem;"><a href="{% url 'admin_center' %}">&larr; Back to Admin Center</a></p>
+{% else %}
+<p style="margin-top:1rem;"><a href="{% url 'department_page' %}">&larr; Back to Department</a></p>
+{% endif %}
+{% endblock %}

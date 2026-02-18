@@ -1,0 +1,45 @@
+{% extends "accounts/dept_iscm/base.html" %}
+
+{% block title %}{{ department.name }}{% endblock %}
+
+{% block content %}
+<h1>{{ department.name }}</h1>
+<p class="subtitle">{{ department.description }}</p>
+
+{% if user.is_staff %}
+<p><a href="{% url 'admin_center' %}">&larr; Back to Admin Center</a></p>
+{% endif %}
+
+<h2>Team Members ({{ members.count }})</h2>
+{% if members %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Job Title</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td>{{ member.user.first_name }} {{ member.user.last_name|default:member.user.username }}</td>
+            <td>{{ member.job_title|default:"—" }}</td>
+            <td>{{ member.user.email|default:"—" }}</td>
+            <td>{{ member.phone_number|default:"—" }}</td>
+            <td>
+                <a href="{% url 'member_profile' member.user.id %}" class="btn btn-sm">Profile</a>
+                {% if user.is_staff %}
+                <a href="{% url 'employee_kpi' member.user.id %}" class="btn btn-sm">KPIs</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p><em>No members in this department yet.</em></p>
+{% endif %}
+{% endblock %}

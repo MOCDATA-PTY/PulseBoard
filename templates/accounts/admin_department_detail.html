@@ -1,0 +1,46 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}{{ department.name }}{% endblock %}
+{% block page_subtitle %}{{ members.count }} member{{ members.count|pluralize }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;">
+    <a href="{% url 'admin_center' %}" class="back-link">&larr; Back to Dashboard</a>
+    <a href="{% url 'dept_org_chart' department.id %}" class="btn btn-sm">Org Chart</a>
+</div>
+
+{% if department.description %}
+<div class="card" style="margin-top:16px;">
+    <p>{{ department.description }}</p>
+</div>
+{% endif %}
+
+<h2>Members</h2>
+{% if members %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Job Title</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in members %}
+        <tr>
+            <td>{{ m.user.first_name }} {{ m.user.last_name }}</td>
+            <td>{{ m.user.username }}</td>
+            <td>{{ m.job_title|default:"—" }}</td>
+            <td>
+                <a href="{% url 'employee_kpi' m.user.id %}" class="btn btn-sm">View</a>
+                <a href="{% url 'admin_edit_user' m.user.id %}" class="btn btn-sm btn-outline">Edit</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#605e5c;"><em>No members assigned to this department yet.</em></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}Edit: {{ target_user.first_name }} {{ target_user.last_name }}{% endblock %}
+{% block page_subtitle %}{{ target_user.username }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_center' %}" class="back-link">&larr; Back to Dashboard</a>
+
+<div style="display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;">
+    <div class="card" style="flex:1;min-width:280px;">
+        <h3>User Details</h3>
+        <form method="post" enctype="multipart/form-data" id="editForm">
+            {% csrf_token %}
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <div style="position:relative;cursor:pointer;" onclick="document.getElementById('id_profile_picture').click();">
+                    {% if target_user.profile.profile_picture %}
+                        <img id="avatarPreview" src="{{ target_user.profile.profile_picture.url }}" style="width:72px;height:72px;object-fit:cover;border-radius:50%;">
+                    {% else %}
+                        <div id="avatarInitials" style="width:72px;height:72px;background:#8CB7C4;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.3rem;">
+                            {{ target_user.first_name.0 }}{{ target_user.last_name.0 }}
+                        </div>
+                        <img id="avatarPreview" src="" style="width:72px;height:72px;object-fit:cover;border-radius:50%;display:none;position:absolute;top:0;left:0;">
+                    {% endif %}
+                    <div style="position:absolute;bottom:0;right:0;width:24px;height:24px;background:#054B70;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
+                </div>
+                <div>
+                    <p style="font-weight:600;font-size:1rem;">{{ target_user.first_name }} {{ target_user.last_name }}</p>
+                    <p style="color:#605e5c;font-size:0.85rem;">{{ target_user.email }}</p>
+                    <p style="color:#054B70;font-size:0.75rem;cursor:pointer;margin-top:2px;" onclick="document.getElementById('id_profile_picture').click();">Change photo</p>
+                </div>
+            </div>
+            <p><strong>Joined:</strong> {{ target_user.date_joined|date:"M j, Y" }}</p>
+
+            <div style="margin-top:16px;border-top:1px solid #edebe9;padding-top:16px;">
+                <h3>Update</h3>
+                {% for field in form %}
+                    {% if field.name != 'profile_picture' %}
+                    <p>
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+                        {{ field.errors }}
+                    </p>
+                    {% else %}
+                        <div style="display:none;">{{ field }}</div>
+                    {% endif %}
+                {% endfor %}
+                <button type="submit" style="margin-top:12px;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_profile_picture').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var preview = document.getElementById('avatarPreview');
+            var initials = document.getElementById('avatarInitials');
+            preview.src = ev.target.result;
+            preview.style.display = 'block';
+            if (initials) initials.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

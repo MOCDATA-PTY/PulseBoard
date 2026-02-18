@@ -1,0 +1,79 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}{{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+{% block page_subtitle %}
+    {% if department %}{{ department.name }}{% else %}Unassigned{% endif %}
+    — {{ employee_profile.job_title|default:"Employee" }}
+{% endblock %}
+
+{% block content %}
+<a href="{% if department %}{% url 'admin_department_detail' department.id %}{% else %}{% url 'admin_center' %}{% endif %}" class="back-link">&larr; Back</a>
+
+<div class="card" style="margin-top:16px;">
+    <div style="display:flex;align-items:center;gap:20px;">
+        {% if employee_profile.profile_picture %}
+            <img src="{{ employee_profile.profile_picture.url }}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;flex-shrink:0;">
+        {% else %}
+            <div style="width:80px;height:80px;background:#8CB7C4;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;flex-shrink:0;">
+                {{ employee.first_name.0 }}{{ employee.last_name.0 }}
+            </div>
+        {% endif %}
+        <div>
+            <h3 style="margin:0;">{{ employee.first_name }} {{ employee.last_name }}</h3>
+            <p style="color:#605e5c;font-size:0.85rem;margin-top:2px;">{{ employee_profile.job_title|default:"No title set" }}</p>
+            <p style="color:#605e5c;font-size:0.85rem;">{{ employee.email|default:"No email" }}</p>
+        </div>
+        <div style="margin-left:auto;">
+            <a href="{% url 'admin_edit_user' employee.id %}" class="btn btn-outline btn-sm">Edit</a>
+        </div>
+    </div>
+</div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;">
+    <h2 style="margin:0;">KPI Files — {{ view_year }}</h2>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <a href="?year={{ view_year|add:"-1" }}" class="btn btn-sm btn-outline">&larr; {{ view_year|add:"-1" }}</a>
+        {% if view_year < current_year %}
+        <a href="?year={{ view_year|add:"1" }}" class="btn btn-sm btn-outline">{{ view_year|add:"1" }} &rarr;</a>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+    {% for q in quarters %}
+    <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div>
+                <h3 style="margin:0;color:#054B70;">{{ q.code }}</h3>
+                <p style="font-size:0.75rem;color:#a19f9d;margin:2px 0 0;">{{ q.label }}</p>
+            </div>
+            {% if q.file %}
+                <span style="background:#dff6dd;color:#107c10;padding:3px 10px;font-size:0.75rem;font-weight:600;border-radius:3px;">Uploaded</span>
+                <span style="font-size:0.8rem;color:#605e5c;">{{ q.file.uploaded_at|date:"M j, Y" }}</span>
+            {% else %}
+                <span style="background:#fde7e9;color:#a4262c;padding:3px 10px;font-size:0.75rem;font-weight:600;border-radius:3px;">File Missing</span>
+            {% endif %}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+            {% if q.file %}
+                <a href="{% url 'view_kpi_file' q.file.id %}" class="btn btn-sm">View KPI</a>
+                <a href="{{ q.file.file.url }}" class="btn btn-sm btn-outline" download>Download</a>
+                <form method="post" action="{% url 'delete_kpi_file' q.file.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm" style="background:#a4262c;border-color:#a4262c;font-size:0.75rem;" onclick="return confirm('Delete this KPI file?')">Delete</button>
+                </form>
+                <button class="btn btn-sm btn-outline" style="font-size:0.75rem;" onclick="document.getElementById('upload_{{ q.code }}').click();">Replace</button>
+            {% else %}
+                <button class="btn btn-sm" onclick="document.getElementById('upload_{{ q.code }}').click();">Upload</button>
+            {% endif %}
+        </div>
+        <form method="post" enctype="multipart/form-data" id="form_{{ q.code }}" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" name="quarter" value="{{ q.code }}">
+            <input type="hidden" name="year" value="{{ view_year }}">
+            <input type="file" id="upload_{{ q.code }}" name="file" onchange="document.getElementById('form_{{ q.code }}').submit();">
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

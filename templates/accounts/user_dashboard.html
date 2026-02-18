@@ -1,0 +1,51 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>Welcome, {{ user.first_name|default:user.username }}!</h1>
+
+<div class="card">
+    <h3>Your Profile</h3>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>Member Since:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
+</div>
+
+{% if department %}
+<div class="card">
+    <h3>Your Department: {{ department.name }}</h3>
+    {% if department.description %}
+        <p>{{ department.description }}</p>
+    {% endif %}
+</div>
+
+{% if colleagues %}
+<div class="card">
+    <h3>Your Colleagues</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for colleague in colleagues %}
+            <tr>
+                <td><a href="{% url 'member_profile' colleague.user.id %}">{{ colleague.user.first_name }} {{ colleague.user.last_name|default:colleague.user.username }}</a></td>
+                <td>{{ colleague.user.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-error">
+    <p>You have not been assigned to a department yet. Please contact an administrator.</p>
+</div>
+{% endif %}
+{% endblock %}

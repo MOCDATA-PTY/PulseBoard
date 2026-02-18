@@ -1,0 +1,149 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}Edit: {{ department.name }}{% endblock %}
+{% block page_subtitle %}Department settings and branding{% endblock %}
+
+{% block content %}
+<style>
+    .logo-wrap {
+        width: 72px; height: 72px; position: relative; cursor: pointer; flex-shrink: 0;
+    }
+    .logo-wrap img, .logo-wrap .logo-initials {
+        width: 72px; height: 72px; border-radius: 8px; object-fit: cover; display: block;
+    }
+    .logo-wrap .logo-initials {
+        background: #054B70; display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700; font-size: 1.3rem;
+    }
+    .logo-wrap .cam-badge {
+        position: absolute; bottom: -4px; right: -4px; width: 24px; height: 24px;
+        background: #054B70; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; border: 2px solid white;
+    }
+    .color-picker-row { display: flex; gap: 24px; flex-wrap: wrap; }
+    .color-picker-row > div { min-width: 100px; }
+    .color-picker-row input[type="color"] {
+        width: 48px; height: 32px; padding: 2px; border: 1px solid #8a8886; cursor: pointer;
+    }
+</style>
+
+<a href="{% url 'admin_manage' %}" class="back-link">&larr; Back to Manage</a>
+
+<div style="display:flex;gap:24px;margin-top:16px;flex-wrap:wrap;">
+    <div class="card" style="flex:1;min-width:320px;">
+        <h3>Department Details</h3>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Logo upload -->
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;overflow:visible;">
+                <div class="logo-wrap" onclick="document.getElementById('id_logo').click();">
+                    {% if department.logo %}
+                        <img id="logoPreview" src="{{ department.logo.url }}">
+                    {% else %}
+                        <div id="logoInitials" class="logo-initials">{{ department.name.0 }}</div>
+                        <img id="logoPreview" src="" style="display:none;position:absolute;top:0;left:0;">
+                    {% endif %}
+                    <div class="cam-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
+                </div>
+                <div>
+                    <p style="font-weight:600;font-size:1rem;margin:0;">{{ department.name }}</p>
+                    <p style="color:#054B70;font-size:0.75rem;cursor:pointer;margin:4px 0 0;" onclick="document.getElementById('id_logo').click();">Change logo</p>
+                </div>
+            </div>
+
+            <!-- Hidden file input -->
+            <div style="display:none;">{{ form.logo }}</div>
+
+            <!-- Name & Description -->
+            <p>
+                <label for="id_name">Department Name:</label>
+                {{ form.name }}
+                {{ form.name.errors }}
+            </p>
+            <p>
+                <label for="id_description">Description:</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+            </p>
+
+            <!-- Branding Colors -->
+            <div style="border-top:1px solid #edebe9;margin-top:20px;padding-top:16px;">
+                <h3>Branding Colors</h3>
+                <p style="font-size:0.8rem;color:#605e5c;margin-bottom:12px;">These colors will be used across the top bar and sidebar for this department.</p>
+                <div class="color-picker-row">
+                    <div>
+                        <label for="id_brand_primary">Primary Color</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            {{ form.brand_primary }}
+                            <span id="primaryHex" style="font-size:0.8rem;color:#605e5c;">{{ department.brand_primary }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="id_brand_hover">Hover Color</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            {{ form.brand_hover }}
+                            <span id="hoverHex" style="font-size:0.8rem;color:#605e5c;">{{ department.brand_hover }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="id_brand_accent">Accent Color</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            {{ form.brand_accent }}
+                            <span id="accentHex" style="font-size:0.8rem;color:#605e5c;">{{ department.brand_accent }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live preview -->
+                <div style="margin-top:16px;padding:16px;border:1px solid #edebe9;background:#faf9f8;">
+                    <p style="font-size:0.75rem;font-weight:600;color:#605e5c;margin-bottom:8px;">PREVIEW</p>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div id="previewPrimary" style="width:40px;height:40px;border-radius:4px;background:{{ department.brand_primary }};"></div>
+                        <div id="previewHover" style="width:40px;height:40px;border-radius:4px;background:{{ department.brand_hover }};"></div>
+                        <div id="previewAccent" style="width:40px;height:40px;border-radius:4px;background:{{ department.brand_accent }};"></div>
+                        <div id="previewBtn" style="background:{{ department.brand_primary }};color:white;padding:6px 20px;font-size:0.85rem;font-weight:600;">Sample Button</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" style="margin-top:20px;">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Logo preview
+document.getElementById('id_logo').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var preview = document.getElementById('logoPreview');
+            var initials = document.getElementById('logoInitials');
+            preview.src = ev.target.result;
+            preview.style.display = 'block';
+            if (initials) initials.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Live color preview
+document.getElementById('id_brand_primary').addEventListener('input', function() {
+    document.getElementById('previewPrimary').style.background = this.value;
+    document.getElementById('previewBtn').style.background = this.value;
+    document.getElementById('primaryHex').textContent = this.value;
+});
+document.getElementById('id_brand_hover').addEventListener('input', function() {
+    document.getElementById('previewHover').style.background = this.value;
+    document.getElementById('hoverHex').textContent = this.value;
+});
+document.getElementById('id_brand_accent').addEventListener('input', function() {
+    document.getElementById('previewAccent').style.background = this.value;
+    document.getElementById('accentHex').textContent = this.value;
+});
+</script>
+{% endblock %}

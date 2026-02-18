@@ -1,0 +1,97 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}{{ total_users }} user{{ total_users|pluralize }} found{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    <input type="text" id="userSearch" placeholder="Search by name..." style="padding:5px 10px;border:1px solid #8a8886;font-size:0.85rem;font-family:inherit;min-width:200px;">
+    <form method="get" style="display:flex;gap:10px;align-items:center;">
+        <select name="department" onchange="this.form.submit()" style="padding:5px 8px;border:1px solid #8a8886;font-size:0.85rem;font-family:inherit;">
+            <option value="">All Departments</option>
+            <option value="unassigned" {% if dept_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
+            {% for dept in departments %}
+            <option value="{{ dept.id }}" {% if dept_filter == dept.id|stringformat:"d" %}selected{% endif %}>{{ dept.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="role" onchange="this.form.submit()" style="padding:5px 8px;border:1px solid #8a8886;font-size:0.85rem;font-family:inherit;">
+            <option value="">All Roles</option>
+            <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>Managers</option>
+            <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Employees</option>
+        </select>
+        {% if dept_filter or role_filter %}
+        <a href="{% url 'admin_users' %}" style="font-size:0.8rem;color:var(--brand);">Clear filters</a>
+        {% endif %}
+    </form>
+    <a href="{% url 'admin_manage' %}" class="btn btn-sm" style="margin-left:auto;">+ Add User</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Job Title</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td style="width:36px;padding-right:0;">
+                {% if u.profile.profile_picture %}
+                    <img src="{{ u.profile.profile_picture.url }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                    <div style="width:30px;height:30px;background:{% if u.is_staff %}var(--brand){% else %}var(--brand-accent){% endif %};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:0.65rem;">
+                        {{ u.first_name.0 }}{{ u.last_name.0 }}
+                    </div>
+                {% endif %}
+            </td>
+            <td style="font-weight:600;">{{ u.first_name }} {{ u.last_name }}</td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.email|default:"—" }}</td>
+            <td>
+                {% if u.profile.department %}
+                    {{ u.profile.department.name }}
+                {% else %}
+                    <span style="color:#a19f9d;font-style:italic;">Unassigned</span>
+                {% endif %}
+            </td>
+            <td>{{ u.profile.job_title|default:"—" }}</td>
+            <td>
+                {% if u.is_staff %}
+                    <span style="background:var(--brand);color:white;padding:2px 8px;font-size:0.7rem;font-weight:600;border-radius:2px;">Manager</span>
+                {% else %}
+                    <span style="font-size:0.8rem;color:#605e5c;">Employee</span>
+                {% endif %}
+            </td>
+            <td>
+                <div style="display:flex;gap:4px;">
+                    <a href="{% url 'admin_edit_user' u.id %}" class="btn btn-sm btn-outline">Edit</a>
+                    <a href="{% url 'employee_kpi' u.id %}" class="btn btn-sm btn-outline">KPIs</a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" style="text-align:center;color:#a19f9d;font-style:italic;padding:24px;">No users found matching the selected filters.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+document.getElementById('userSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('tbody tr').forEach(row => {
+        const nameCell = row.querySelector('td:nth-child(2)');
+        if (!nameCell) return;
+        row.style.display = nameCell.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
