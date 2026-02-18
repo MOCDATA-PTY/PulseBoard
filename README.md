@@ -1,6 +1,8 @@
-# KPI Management System
+# PulseBoard
 
-## How to Run
+A multi-department management platform built with Django. Manage users, departments, KPIs, and org charts with per-department branding.
+
+## How to Run (Development)
 
 ```bash
 cd "/home/ethan/Desktop/Gerlad Project"
@@ -9,35 +11,41 @@ python3 manage.py runserver
 
 Open http://127.0.0.1:8000/
 
+## Production Server
+
+- **URL:** http://pulseboard.moc-pty.com
+- **Server:** 167.88.43.168
+- **Stack:** Gunicorn (port 9200) + Nginx (port 80)
+- **Database:** MySQL (`pulseboard`)
+- **Project path:** `/var/www/PulseBoard`
+
 ## Login Credentials
 
-### Manager / Admin
+| Name | Username | Password | Role |
+|------|----------|----------|------|
+| Gerald MOC | gerald | PulseBoard2026 | Manager |
+| Anthony MOC | anthony | PulseBoard2026 | Manager |
+| Ethan MOC | ethan | PulseBoard2026 | Manager |
 
-| Username | Password | Role |
-|----------|----------|------|
-| ethan | password123 | Admin / Manager (manages all departments) |
+All managers have full Admin Center access.
 
-### Department Users
+## Features
 
-| Username | Password | Name | Department |
-|----------|----------|------|------------|
-| fsa_user | test1234 | Sarah Mitchell | Food Safety Agency |
-| iscm_user | test1234 | James Rivera | ISCM |
-| eclick_user | test1234 | Mia Chen | Eclick |
-| magnum_user | test1234 | Daniel Brooks | Magnum Opus |
+- **Admin Center** — Manage users, departments, and KPIs
+- **Department Branding** — Each department has customizable colors (primary, hover, accent) and a logo
+- **KPI Management** — Upload and track KPI files per employee
+- **Org Charts** — Visual hierarchy for each department with drag-and-drop reordering
+- **User Profiles** — Profile pictures, job titles, and department assignments
+- **Role-Based Access** — Managers see the Admin Center; employees see their department dashboard
 
-## What Each Role Sees
+## Deployment
 
-**Manager (ethan):**
-- Admin Center with all users and departments
-- Can add new users and assign them to departments
-- Can rate any employee on KPIs (Productivity, Quality, Teamwork, Communication, Initiative, Attendance)
-- Can view KPI reports for any employee
-- Can click into any department to see its members
-
-**Department Users (fsa_user, iscm_user, eclick_user, magnum_user):**
-- Branded dashboard matching their department's theme
-- Their own profile and KPI scores
-- "My Department" page listing all colleagues
-- Can view profiles of colleagues in the same department only
-- Cannot see other departments or users outside their department
+```bash
+# On the server
+cd /var/www/PulseBoard
+git pull origin main
+source venv/bin/activate
+python manage.py migrate
+python manage.py collectstatic --noinput
+sudo systemctl restart pulseboard
+```
