@@ -387,7 +387,7 @@ function attachDrag(el, node, source) {
 function renderList() {
     const container = document.getElementById('orgTree');
     if (treeData.length === 0 && unassignedData.length === 0) {
-        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this department.</p>';
+        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this company.</p>';
         return;
     }
     const ul = document.createElement('ul');
@@ -454,7 +454,7 @@ function renderListNode(node) {
 function renderHTree() {
     const container = document.getElementById('orgTree');
     if (treeData.length === 0 && unassignedData.length === 0) {
-        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this department.</p>';
+        container.innerHTML = '<p style="color:#a19f9d;font-style:italic;">No members in this company.</p>';
         return;
     }
     container.innerHTML = '';

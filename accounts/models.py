@@ -13,6 +13,8 @@ class Department(models.Model):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'company'
+        verbose_name_plural = 'companies'
 
     def __str__(self):
         return self.name
@@ -26,6 +28,7 @@ class UserProfile(models.Model):
         null=True,
         blank=True,
         related_name='members',
+        verbose_name='company',
     )
     phone_number = models.CharField(max_length=20, blank=True)
     job_title = models.CharField(max_length=100, blank=True)

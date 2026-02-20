@@ -1,7 +1,7 @@
 {% extends "accounts/admin_base.html" %}
 
 {% block page_title %}Add New {% if adding_manager %}Manager{% else %}Employee{% endif %}{% endblock %}
-{% block page_subtitle %}Create a new {% if adding_manager %}manager{% else %}employee{% endif %} and assign them to a department{% endblock %}
+{% block page_subtitle %}Create a new {% if adding_manager %}manager{% else %}employee{% endif %} and assign them to a company{% endblock %}
 
 {% block content %}
 <a href="{% url 'admin_center' %}" class="back-link">&larr; Back to Dashboard</a>
