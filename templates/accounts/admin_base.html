@@ -304,7 +304,7 @@
             {% if is_super_admin %}<li><a href="{% url 'org_chart' %}">Org Chart</a></li>{% endif %}
             <li><a href="{% url 'admin_users' %}">All Users</a></li>
         </ul>
-        <div class="sidebar-section">Departments</div>
+        <div class="sidebar-section">Companies</div>
         <ul class="sidebar-nav">
             {% for dept in sidebar_departments %}
             <li><a href="{% url 'admin_department_detail' dept.id %}">{{ dept.name }}</a></li>

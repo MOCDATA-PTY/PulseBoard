@@ -12,7 +12,7 @@ class AdminUserCreationForm(UserCreationForm):
     department = forms.ModelChoiceField(
         queryset=Department.objects.all(),
         required=True,
-        empty_label='-- Select Department --',
+        empty_label='-- Select Company --',
     )
     phone_number = forms.CharField(max_length=20, required=False)
     job_title = forms.CharField(max_length=100, required=False)
@@ -90,7 +90,7 @@ class DepartmentForm(forms.ModelForm):
             'brand_primary': 'Primary Color',
             'brand_hover': 'Hover Color',
             'brand_accent': 'Accent Color',
-            'logo': 'Department Logo',
+            'logo': 'Company Logo',
         }
 
 

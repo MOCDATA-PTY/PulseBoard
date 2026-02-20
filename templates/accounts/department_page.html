@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 
-{% block title %}My Department{% endblock %}
+{% block title %}My Company{% endblock %}
 
 {% block content %}
 {% if department %}
@@ -37,9 +37,9 @@
 </table>
 
 {% else %}
-<h1>My Department</h1>
+<h1>My Company</h1>
 <div class="alert alert-error">
-    <p>You have not been assigned to a department yet. Please contact an administrator.</p>
+    <p>You have not been assigned to a company yet. Please contact an administrator.</p>
 </div>
 {% endif %}
 {% endblock %}

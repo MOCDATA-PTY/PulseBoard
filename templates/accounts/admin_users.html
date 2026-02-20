@@ -8,7 +8,7 @@
     <input type="text" id="userSearch" placeholder="Search by name..." style="padding:5px 10px;border:1px solid #8a8886;font-size:0.85rem;font-family:inherit;min-width:200px;">
     <form method="get" style="display:flex;gap:10px;align-items:center;">
         <select name="department" onchange="this.form.submit()" style="padding:5px 8px;border:1px solid #8a8886;font-size:0.85rem;font-family:inherit;">
-            <option value="">All Departments</option>
+            <option value="">All Companies</option>
             <option value="unassigned" {% if dept_filter == 'unassigned' %}selected{% endif %}>Unassigned</option>
             {% for dept in departments %}
             <option value="{{ dept.id }}" {% if dept_filter == dept.id|stringformat:"d" %}selected{% endif %}>{{ dept.name }}</option>
@@ -33,7 +33,7 @@
             <th>Name</th>
             <th>Username</th>
             <th>Email</th>
-            <th>Department</th>
+            <th>Company</th>
             <th>Job Title</th>
             <th>Role</th>
             <th>Actions</th>

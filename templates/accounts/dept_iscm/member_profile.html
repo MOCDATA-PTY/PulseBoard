@@ -16,7 +16,7 @@
 <div class="card">
     <h3>Work Information</h3>
     <p><strong>Job Title:</strong> {{ target_profile.job_title|default:"Not set" }}</p>
-    <p><strong>Department:</strong> {{ target_profile.department.name|default:"Unassigned" }}</p>
+    <p><strong>Company:</strong> {{ target_profile.department.name|default:"Unassigned" }}</p>
     <p><strong>Member Since:</strong> {{ target_user.date_joined|date:"F j, Y" }}</p>
 </div>
 
@@ -26,6 +26,6 @@
 </p>
 <p style="margin-top:1rem;"><a href="{% url 'admin_center' %}">&larr; Back to Admin Center</a></p>
 {% else %}
-<p style="margin-top:1rem;"><a href="{% url 'department_page' %}">&larr; Back to Department</a></p>
+<p style="margin-top:1rem;"><a href="{% url 'department_page' %}">&larr; Back to Company</a></p>
 {% endif %}
 {% endblock %}

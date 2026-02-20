@@ -1,7 +1,7 @@
 {% extends "accounts/admin_base.html" %}
 
 {% block page_title %}Manage{% endblock %}
-{% block page_subtitle %}Users, roles, and departments{% endblock %}
+{% block page_subtitle %}Users, roles, and companies{% endblock %}
 
 {% block content %}
 <style>
@@ -31,11 +31,11 @@
 <!-- Action buttons -->
 <div style="display:flex;gap:10px;margin-bottom:24px;">
     <button class="btn" onclick="openModal('user-modal')">+ Add User</button>
-    <button class="btn btn-outline" onclick="openModal('dept-modal')">+ Add Department</button>
+    <button class="btn btn-outline" onclick="openModal('dept-modal')">+ Add Company</button>
 </div>
 
-<!-- Departments Grid -->
-<h2 style="margin-top:0;">Departments</h2>
+<!-- Companies Grid -->
+<h2 style="margin-top:0;">Companies</h2>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
     {% for dept in all_departments %}
     <div class="card" style="margin-bottom:0;">
@@ -55,14 +55,14 @@
         <div style="display:flex;gap:6px;">
             <a href="{% url 'admin_department_detail' dept.id %}" class="btn btn-sm btn-outline">View</a>
             <a href="{% url 'admin_edit_department' dept.id %}" class="btn btn-sm btn-outline">Edit</a>
-            <form method="post" action="{% url 'delete_department' dept.id %}" style="display:inline;" onsubmit="return confirm('Delete department {{ dept.name }}? This will permanently delete ALL users and managers in this department. This cannot be undone.')">
+            <form method="post" action="{% url 'delete_department' dept.id %}" style="display:inline;" onsubmit="return confirm('Delete company {{ dept.name }}? This will permanently delete ALL users and managers in this company. This cannot be undone.')">
                 {% csrf_token %}
                 <button type="submit" class="btn-delete btn-sm">Delete</button>
             </form>
         </div>
     </div>
     {% empty %}
-    <p style="color:#a19f9d;font-style:italic;grid-column:1/-1;text-align:center;padding:24px;">No departments yet.</p>
+    <p style="color:#a19f9d;font-style:italic;grid-column:1/-1;text-align:center;padding:24px;">No companies yet.</p>
     {% endfor %}
 </div>
 
@@ -74,7 +74,7 @@
             <th></th>
             <th>Name</th>
             <th>Username</th>
-            <th>Department</th>
+            <th>Company</th>
             <th>Position</th>
             <th>Role</th>
             <th>Actions</th>
@@ -141,23 +141,23 @@
     </div>
 </div>
 
-<!-- Add Department Modal -->
+<!-- Add Company Modal -->
 <div class="modal-overlay {% if show_modal == 'dept' %}active{% endif %}" id="dept-modal" onclick="if(event.target===this)closeModal('dept-modal')">
     <div class="modal">
         <button class="modal-close" onclick="closeModal('dept-modal')">&times;</button>
-        <h3>Add Department</h3>
+        <h3>Add Company</h3>
         <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="add_department">
             <p>
-                <label for="dept_name">Department name:</label>
+                <label for="dept_name">Company name:</label>
                 <input type="text" id="dept_name" name="dept_name" required>
             </p>
             <p>
                 <label for="dept_description">Description:</label>
                 <textarea id="dept_description" name="dept_description" rows="3" style="width:100%;padding:6px 8px;border:1px solid #8a8886;font-family:inherit;font-size:0.9rem;"></textarea>
             </p>
-            <button type="submit" style="margin-top:12px;">Create Department</button>
+            <button type="submit" style="margin-top:12px;">Create Company</button>
         </form>
     </div>
 </div>

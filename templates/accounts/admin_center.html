@@ -2,7 +2,7 @@
 
 {% block nav_dashboard %}active{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Overview of all departments and users{% endblock %}
+{% block page_subtitle %}Overview of all companies and users{% endblock %}
 
 {% block content %}
 <div class="stats-row">
@@ -12,15 +12,15 @@
     </div>
     <div class="card">
         <div class="stat">{{ total_departments }}</div>
-        <p>Departments</p>
+        <p>Companies</p>
     </div>
 </div>
 
-<h2>Departments</h2>
+<h2>Companies</h2>
 <table>
     <thead>
         <tr>
-            <th>Department</th>
+            <th>Company</th>
             <th>Members</th>
             <th></th>
         </tr>
@@ -43,7 +43,7 @@
         <tr>
             <th>Name</th>
             <th>Username</th>
-            <th>Department</th>
+            <th>Company</th>
             <th>Role</th>
             <th></th>
         </tr>

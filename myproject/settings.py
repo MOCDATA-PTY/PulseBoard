@@ -76,7 +76,7 @@ DATABASES = {
         'NAME': 'pulseboard',
         'USER': 'pulseboard',
         'PASSWORD': 'PulseB0ard@2026Secure',
-        'HOST': '167.88.43.168',  # ← remote MySQL server IP
+        'HOST': '167.88.43.168',  # remote MySQL server IP
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',

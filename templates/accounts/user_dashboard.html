@@ -15,7 +15,7 @@
 
 {% if department %}
 <div class="card">
-    <h3>Your Department: {{ department.name }}</h3>
+    <h3>Your Company: {{ department.name }}</h3>
     {% if department.description %}
         <p>{{ department.description }}</p>
     {% endif %}
@@ -45,7 +45,7 @@
 
 {% else %}
 <div class="alert alert-error">
-    <p>You have not been assigned to a department yet. Please contact an administrator.</p>
+    <p>You have not been assigned to a company yet. Please contact an administrator.</p>
 </div>
 {% endif %}
 {% endblock %}
