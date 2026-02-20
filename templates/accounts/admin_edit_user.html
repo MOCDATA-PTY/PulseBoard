@@ -68,5 +68,24 @@ document.getElementById('id_profile_picture').addEventListener('change', functio
         reader.readAsDataURL(file);
     }
 });
+
+// Show/hide password fields based on Manager checkbox
+(function() {
+    var cb = document.getElementById('id_is_manager');
+    if (!cb) return;
+    var pw1 = document.getElementById('id_password1');
+    var pw2 = document.getElementById('id_password2');
+    if (!pw1 || !pw2) return;
+    var pw1Row = pw1.closest('p');
+    var pw2Row = pw2.closest('p');
+    function toggle() {
+        var show = cb.checked;
+        pw1Row.style.display = show ? '' : 'none';
+        pw2Row.style.display = show ? '' : 'none';
+        if (!show) { pw1.value = ''; pw2.value = ''; }
+    }
+    cb.addEventListener('change', toggle);
+    toggle();
+})();
 </script>
 {% endblock %}
