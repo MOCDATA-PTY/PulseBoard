@@ -23,9 +23,9 @@ Open http://127.0.0.1:8000/
 
 | Name | Username | Password | Role |
 |------|----------|----------|------|
-| Gerald MOC | gerald | PulseBoard2026 | Manager |
-| Anthony MOC | anthony | PulseBoard2026 | Manager |
-| Ethan MOC | ethan | PulseBoard2026 | Manager |
+| Gerald MOC | Gerald | PulseBoard2026 | Manager |
+| Anthony MOC | Anthony | PulseBoard2026 | Manager |
+| Ethan MOC | Ethan | PulseBoard2026 | Manager |
 
 All managers have full Admin Center access.
 

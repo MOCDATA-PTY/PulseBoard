@@ -94,7 +94,7 @@
                     <a href="{% url 'admin_center' %}">Admin Center</a>
                 {% else %}
                     <a href="{% url 'user_dashboard' %}">Dashboard</a>
-                    <a href="{% url 'department_page' %}">My Department</a>
+                    <a href="{% url 'department_page' %}">Companies</a>
                 {% endif %}
                 <form method="post" action="{% url 'logout' %}" style="display:inline;">
                     {% csrf_token %}

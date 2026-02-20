@@ -16,13 +16,11 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-girjt0n_k=7!jk3+1hk6timw&^o@v=7w_v4c_7zv_@c)&(hh4@')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENVIRONMENT == 'development'
+DEBUG = True  # ← change to False in real production
 
 ALLOWED_HOSTS = ['167.88.43.168', 'pulseboard.moc-pty.com', 'localhost', '127.0.0.1']
 
@@ -69,30 +67,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'myproject.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-if ENVIRONMENT == 'production':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'pulseboard',
-            'USER': 'pulseboard',
-            'PASSWORD': 'PulseB0ard@2026Secure',
-            'HOST': 'localhost',
-            'PORT': '3306',
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-            },
-        }
+# ────────────────────────────────────────────────────────────────
+# Database — FORCED to MySQL (pulseboard) — no more SQLite fallback
+# ────────────────────────────────────────────────────────────────
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'pulseboard',
+        'USER': 'pulseboard',
+        'PASSWORD': 'PulseB0ard@2026Secure',
+        'HOST': '167.88.43.168',  # ← remote MySQL server IP
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 
 # Password validation
