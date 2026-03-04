@@ -11,6 +11,7 @@ class AdminUserCreationForm(forms.ModelForm):
     department = forms.ModelChoiceField(
         queryset=Department.objects.all(),
         required=True,
+        label='Company',
         empty_label='-- Select Company --',
     )
     phone_number = forms.CharField(max_length=20, required=False)
@@ -77,6 +78,7 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['department'].label = 'Company'
         if self.instance and self.instance.user:
             self.initial['first_name'] = self.instance.user.first_name
             self.initial['last_name'] = self.instance.user.last_name
