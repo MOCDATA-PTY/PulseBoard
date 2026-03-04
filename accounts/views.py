@@ -202,7 +202,7 @@ def admin_department_detail(request, dept_id):
         return HttpResponseForbidden("You don't have access to this department.")
     members = department.members.select_related('user').all()
     for m in members:
-        avg = KPIFile.objects.filter(employee=m, kpi_score__isnull=False).aggregate(avg=Avg('kpi_score'))['avg']
+        avg = KPIFile.objects.filter(employee=m.user, kpi_score__isnull=False).aggregate(avg=Avg('kpi_score'))['avg']
         m.avg_kpi = round(avg) if avg is not None else None
 
     return render(request, 'accounts/admin_department_detail.html', _admin_ctx(request, {
