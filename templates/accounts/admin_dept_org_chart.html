@@ -245,7 +245,7 @@ const KPI_BASE = "{% url 'employee_kpi' 999999 %}".replace('/999999/', '/');
 let treeData = {{ tree_json|safe }};
 let unassignedData = [
     {% for m in unassigned %}
-    { id:{{ m.id }}, user_id:{{ m.user.id }}, first_name:"{{ m.user.first_name|escapejs }}", last_name:"{{ m.user.last_name|escapejs }}", job_title:"{{ m.job_title|default:'No title'|escapejs }}", is_staff:{{ m.user.is_staff|yesno:"true,false" }}, has_picture:{{ m.profile_picture|yesno:"true,false" }}, picture_url:"{% if m.profile_picture %}{{ m.profile_picture.url }}{% endif %}", initials:"{{ m.user.first_name.0 }}{{ m.user.last_name.0 }}", children:[] },
+    { id:{{ m.id }}, user_id:{{ m.user.id }}, first_name:"{{ m.user.first_name|escapejs }}", last_name:"{{ m.user.last_name|escapejs }}", job_title:"{{ m.job_title|default:'No title'|escapejs }}", is_staff:{{ m.user.is_staff|yesno:"true,false" }}, has_picture:{{ m.profile_picture|yesno:"true,false" }}, picture_url:"{% if m.profile_picture %}{{ m.profile_picture.url }}{% endif %}", initials:"{{ m.user.first_name.0 }}{{ m.user.last_name.0 }}", date_joined:"{{ m.user.date_joined|date:'M d, Y' }}", avg_kpi:{% if m.avg_kpi != None %}{{ m.avg_kpi }}{% else %}null{% endif %}, children:[] },
     {% endfor %}
 ];
 
@@ -423,6 +423,12 @@ function renderListNode(node) {
     html += `<div class="vt-avatar" style="background:${avatarBg}">${avatarContent}</div>`;
     html += `<div class="vt-info"><div class="vt-name">${node.first_name} ${node.last_name}</div><div class="vt-title">${node.job_title}</div></div>`;
     html += `<div class="vt-meta">`;
+    if (node.date_joined) html += `<span style="font-size:0.65rem;color:#605e5c;">Joined ${node.date_joined}</span>`;
+    if (node.avg_kpi !== null && node.avg_kpi !== undefined) {
+        const kpiBg = node.avg_kpi >= 75 ? '#dff6dd' : node.avg_kpi >= 50 ? '#fff4ce' : '#fde7e9';
+        const kpiColor = node.avg_kpi >= 75 ? '#107c10' : node.avg_kpi >= 50 ? '#797600' : '#a4262c';
+        html += `<span style="background:${kpiBg};color:${kpiColor};padding:1px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;">${node.avg_kpi}%</span>`;
+    }
     if (childCount > 0) html += `<span class="vt-count">${childCount} report${childCount !== 1 ? 's' : ''}</span>`;
     html += `<span class="vt-badge ${badgeClass}">${badgeText}</span></div>`;
     card.innerHTML = html;
@@ -506,7 +512,14 @@ function renderHNode(node, isRoot) {
     let html = `<div class="ht-avatar" style="background:${avatarBg}">${avatarContent}</div>`;
     html += `<div class="ht-name">${node.first_name} ${node.last_name}</div>`;
     html += `<div class="ht-jobtitle">${node.job_title}</div>`;
-    html += `<div class="ht-badge-row"><span class="vt-badge ${badgeClass}">${badgeText}</span></div>`;
+    if (node.date_joined) html += `<div style="font-size:0.6rem;color:#605e5c;margin-top:2px;">Joined ${node.date_joined}</div>`;
+    html += `<div class="ht-badge-row">`;
+    if (node.avg_kpi !== null && node.avg_kpi !== undefined) {
+        const kpiBg = node.avg_kpi >= 75 ? '#dff6dd' : node.avg_kpi >= 50 ? '#fff4ce' : '#fde7e9';
+        const kpiColor = node.avg_kpi >= 75 ? '#107c10' : node.avg_kpi >= 50 ? '#797600' : '#a4262c';
+        html += `<span style="background:${kpiBg};color:${kpiColor};padding:1px 6px;border-radius:8px;font-size:0.6rem;font-weight:600;margin-right:4px;">${node.avg_kpi}%</span>`;
+    }
+    html += `<span class="vt-badge ${badgeClass}">${badgeText}</span></div>`;
     card.innerHTML = html;
 
     attachDrag(card, node, 'tree');

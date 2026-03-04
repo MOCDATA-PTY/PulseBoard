@@ -200,7 +200,7 @@ def admin_department_detail(request, dept_id):
     department = get_object_or_404(Department, pk=dept_id)
     if not _can_view_department(request.user, department):
         return HttpResponseForbidden("You don't have access to this department.")
-    members = department.members.select_related('user').all()
+    members = department.members.select_related('user').filter(user__is_staff=False)
     for m in members:
         avg = KPIFile.objects.filter(employee=m.user, kpi_score__isnull=False).aggregate(avg=Avg('kpi_score'))['avg']
         m.avg_kpi = round(avg) if avg is not None else None
@@ -412,6 +412,12 @@ def dept_org_chart(request, dept_id):
         'user', 'reports_to__user'
     ).prefetch_related('direct_reports__user').order_by('hierarchy_order')
 
+    # Pre-compute avg KPI for each member
+    member_avg_kpi = {}
+    for m in members:
+        avg = KPIFile.objects.filter(employee=m.user, kpi_score__isnull=False).aggregate(avg=Avg('kpi_score'))['avg']
+        member_avg_kpi[m.id] = round(avg) if avg is not None else None
+
     def build_tree(parent_id=None):
         nodes = []
         for m in members:
@@ -428,6 +434,8 @@ def dept_org_chart(request, dept_id):
                     'has_picture': bool(m.profile_picture),
                     'picture_url': m.profile_picture.url if m.profile_picture else '',
                     'initials': (m.user.first_name[:1] + m.user.last_name[:1]),
+                    'date_joined': m.user.date_joined.strftime('%b %d, %Y'),
+                    'avg_kpi': member_avg_kpi.get(m.id),
                     'children': children,
                 })
         return nodes
@@ -443,6 +451,8 @@ def dept_org_chart(request, dept_id):
             collect_ids(n['children'])
     collect_ids(tree)
     unassigned = [m for m in members if m.id not in assigned_ids]
+    for m in unassigned:
+        m.avg_kpi = member_avg_kpi.get(m.id)
 
     return render(request, 'accounts/admin_dept_org_chart.html', _admin_ctx(request, {
         'department': department,
