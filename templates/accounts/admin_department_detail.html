@@ -24,6 +24,7 @@
             <th>Username</th>
             <th>Job Title</th>
             <th>Joined</th>
+            <th>KPI Avg</th>
             <th></th>
         </tr>
     </thead>
@@ -34,6 +35,13 @@
             <td>{{ m.user.username }}</td>
             <td>{{ m.job_title|default:"—" }}</td>
             <td>{{ m.user.date_joined|date:"M j, Y" }}</td>
+            <td>
+                {% if m.avg_kpi != None %}
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:{% if m.avg_kpi >= 75 %}#dff6dd{% elif m.avg_kpi >= 50 %}#fff4ce{% else %}#fde7e9{% endif %};color:{% if m.avg_kpi >= 75 %}#107c10{% elif m.avg_kpi >= 50 %}#797600{% else %}#a4262c{% endif %};padding:2px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">{{ m.avg_kpi }}%</span>
+                {% else %}
+                    <span style="color:#a19f9d;font-size:0.8rem;">—</span>
+                {% endif %}
+            </td>
             <td>
                 <a href="{% url 'employee_kpi' m.user.id %}" class="btn btn-sm">View</a>
                 <a href="{% url 'admin_edit_user' m.user.id %}" class="btn btn-sm btn-outline">Edit</a>
