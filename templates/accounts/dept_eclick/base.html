@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}eClick{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'images/magnum-opus-logo.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            background: #f5f7f7;
+            color: #333333;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            background: transparent;
+            height: 52px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 24px;
+        }
+        .top-bar-right { display: flex; align-items: center; gap: 4px; }
+        .top-bar-right a { color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.8rem; padding: 6px 12px; font-weight: 500; }
+        .top-bar-right a:hover { background: rgba(255,255,255,0.1); }
+        .top-bar-right form { display: inline; }
+        .top-bar-right button {
+            background: none; border: none; color: rgba(255,255,255,0.9);
+            cursor: pointer; font-size: 0.8rem; font-family: inherit; padding: 6px 12px; font-weight: 500;
+        }
+        .top-bar-right button:hover { background: rgba(255,255,255,0.1); }
+        .user-avatar {
+            width: 32px; height: 32px; background: #7A1A2E; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 0.75rem; margin-left: 8px;
+        }
+
+        .hero {
+            background: #B62845 url("{% static 'images/eclick-hero-banner.jpg' %}") center/cover no-repeat;
+            padding: 4rem 2rem 2.5rem;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(182, 40, 69, 0.55);
+        }
+        .hero-content { position: relative; z-index: 1; padding: 0 8px; }
+        .hero h1 { color: white; font-size: 2.2rem; font-weight: 700; margin-bottom: 0.2rem; }
+        .hero .hero-sub { color: rgba(255,255,255,0.75); font-size: 0.9rem; font-weight: 400; }
+
+        .container { margin: 0; padding: 24px 32px; }
+        .page-card { background: white; padding: 24px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        h1 { color: #333; font-size: 1.4rem; margin-bottom: 8px; font-weight: 700; }
+        h2 { color: #333; font-size: 1.1rem; margin-top: 20px; margin-bottom: 12px; font-weight: 600; }
+        h3 { color: #333; margin-bottom: 8px; font-weight: 600; }
+        .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 16px; }
+
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        th { background: #f8fafa; font-weight: 600; color: #444; }
+
+        .alert { padding: 10px 14px; margin-bottom: 12px; font-size: 0.85rem; border-left: 4px solid; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+        .alert-error { background: #fce4ec; color: #c62828; border-color: #c62828; }
+
+        .card { background: #f8fafa; border: 1px solid #e5eaea; padding: 16px 20px; margin-bottom: 12px; }
+        .card h3 { margin-bottom: 8px; }
+        .card p { color: #666; font-size: 0.9rem; }
+        .card strong { font-weight: 600; color: #333; }
+
+        .stat { font-size: 1.75rem; font-weight: 700; color: #B62845; }
+        .stats-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .stats-row .card { flex: 1; text-align: center; }
+
+        .kpi-bar { height: 5px; background: #e5eaea; overflow: hidden; margin-top: 4px; }
+        .kpi-bar-fill { height: 100%; background: #B62845; }
+
+        button, .btn {
+            display: inline-block; background: #B62845; color: white; padding: 6px 20px;
+            border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; font-family: inherit;
+        }
+        button:hover, .btn:hover { background: #8E1F36; }
+
+        .footer { text-align: center; padding: 24px; color: #999; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-right">
+            {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <a href="{% url 'admin_center' %}">Admin Center</a>
+                {% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Sign out</button>
+                </form>
+                {% if profile.profile_picture %}
+                    <img src="{{ profile.profile_picture.url }}" class="user-avatar" style="object-fit:cover;">
+                {% else %}
+                    <span class="user-avatar">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="hero">
+        <div class="hero-content">
+            <h1>{% block hero_title %}eClick{% endblock %}</h1>
+            <p class="hero-sub">{% block hero_subtitle %}Employee Portal{% endblock %}</p>
+        </div>
+    </div>
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        <div class="page-card">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    <div class="footer">eClick &copy; 2026 — Quick &amp; Simple</div>
+</body>
+</html>

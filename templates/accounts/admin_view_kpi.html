@@ -1,0 +1,55 @@
+{% extends "accounts/admin_base.html" %}
+
+{% block page_title %}{{ kpi_file.quarter }} {{ kpi_file.year }} — {{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+{% block page_subtitle %}KPI File Viewer{% endblock %}
+
+{% block content %}
+<a href="{% url 'employee_kpi' employee.id %}?year={{ kpi_file.year }}" class="back-link">&larr; Back to KPI Files</a>
+
+<div class="card" style="margin-top:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <h3 style="margin:0;">{{ kpi_file.quarter }} {{ kpi_file.year }} — {{ employee.first_name }} {{ employee.last_name }}</h3>
+            <p style="font-size:0.8rem;color:#605e5c;margin-top:4px;">Uploaded {{ kpi_file.uploaded_at|date:"M j, Y \a\t g:i A" }} &middot; {{ file_name }}</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a href="{{ file_url }}" class="btn btn-sm btn-outline" download>Download</a>
+            <form method="post" action="{% url 'delete_kpi_file' kpi_file.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm" style="background:#a4262c;border-color:#a4262c;" onclick="return confirm('Delete this KPI file?')">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top:16px;background:white;border:1px solid #edebe9;min-height:600px;">
+    {% if is_viewable %}
+        {% if ext == 'pdf' %}
+            <iframe src="{{ file_url }}" style="width:100%;height:80vh;border:none;"></iframe>
+        {% else %}
+            <div style="text-align:center;padding:24px;">
+                <img src="{{ file_url }}" style="max-width:100%;max-height:80vh;">
+            </div>
+        {% endif %}
+    {% elif is_office %}
+        <div style="text-align:center;padding:48px;">
+            <div style="font-size:3rem;margin-bottom:16px;">
+                {% if ext == 'csv' %}📊{% elif ext in 'xlsx,xls' %}📗{% elif ext in 'docx,doc' %}📘{% else %}📙{% endif %}
+            </div>
+            <h3 style="margin-bottom:8px;">{{ file_name }}</h3>
+            <p style="color:#605e5c;margin-bottom:20px;">This file type cannot be previewed in the browser. Use the buttons below to open or download it.</p>
+            <div style="display:flex;gap:8px;justify-content:center;">
+                <a href="https://view.officeapps.live.com/op/view.aspx?src={{ request.scheme }}://{{ request.get_host }}{{ file_url|urlencode }}" class="btn" target="_blank">Open in Office Online</a>
+                <a href="{{ file_url }}" class="btn btn-outline" download>Download File</a>
+            </div>
+        </div>
+    {% else %}
+        <div style="text-align:center;padding:48px;">
+            <div style="font-size:3rem;margin-bottom:16px;">📄</div>
+            <h3 style="margin-bottom:8px;">{{ file_name }}</h3>
+            <p style="color:#605e5c;margin-bottom:20px;">This file type cannot be previewed in the browser.</p>
+            <a href="{{ file_url }}" class="btn btn-outline" download>Download File</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
