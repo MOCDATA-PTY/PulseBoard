@@ -242,8 +242,23 @@ def employee_kpi(request, user_id):
     now = timezone.now()
     current_year = now.year
 
-    # Allow viewing other years via query param
+    # Determine earliest allowed year/quarter based on join date
+    joined = employee.date_joined
+    join_year = joined.year
+    join_month = joined.month
+    if join_month <= 3:
+        join_quarter = 1
+    elif join_month <= 6:
+        join_quarter = 2
+    elif join_month <= 9:
+        join_quarter = 3
+    else:
+        join_quarter = 4
+
+    # Allow viewing other years via query param, but not before join year
     view_year = int(request.GET.get('year', current_year))
+    if view_year < join_year:
+        view_year = join_year
 
     if request.method == 'POST':
         action = request.POST.get('action', 'upload')
@@ -280,9 +295,12 @@ def employee_kpi(request, user_id):
             messages.success(request, f'KPI uploaded for {quarter} {upload_year}.')
             return redirect(f"{request.path}?year={upload_year}")
 
-    # Build quarter data
+    # Build quarter data (skip quarters before join date)
+    quarter_num = {'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4}
     quarters = []
     for q_code, q_label in KPIFile.QUARTER_CHOICES:
+        if view_year == join_year and quarter_num[q_code] < join_quarter:
+            continue
         kpi = KPIFile.objects.filter(employee=employee, quarter=q_code, year=view_year).first()
         quarters.append({
             'code': q_code,
@@ -300,6 +318,7 @@ def employee_kpi(request, user_id):
         'quarters': quarters,
         'view_year': view_year,
         'current_year': current_year,
+        'join_year': join_year,
         'avg_score': avg_score,
     }, view_dept=department))
 

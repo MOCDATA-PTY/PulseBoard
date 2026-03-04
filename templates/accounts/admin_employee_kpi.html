@@ -33,7 +33,9 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;">
     <h2 style="margin:0;">KPI Files — {{ view_year }}{% if avg_score is not None %} <span style="font-size:0.85rem;font-weight:500;color:#605e5c;margin-left:8px;">(Avg: {{ avg_score }}%)</span>{% endif %}</h2>
     <div style="display:flex;gap:8px;align-items:center;">
+        {% if view_year > join_year %}
         <a href="?year={{ view_year|add:"-1" }}" class="btn btn-sm btn-outline">&larr; {{ view_year|add:"-1" }}</a>
+        {% endif %}
         {% if view_year < current_year %}
         <a href="?year={{ view_year|add:"1" }}" class="btn btn-sm btn-outline">{{ view_year|add:"1" }} &rarr;</a>
         {% endif %}
