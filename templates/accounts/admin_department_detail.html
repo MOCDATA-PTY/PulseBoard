@@ -23,6 +23,7 @@
             <th>Name</th>
             <th>Username</th>
             <th>Job Title</th>
+            <th>Joined</th>
             <th></th>
         </tr>
     </thead>
@@ -32,6 +33,7 @@
             <td>{{ m.user.first_name }} {{ m.user.last_name }}</td>
             <td>{{ m.user.username }}</td>
             <td>{{ m.job_title|default:"—" }}</td>
+            <td>{{ m.user.date_joined|date:"M j, Y" }}</td>
             <td>
                 <a href="{% url 'employee_kpi' m.user.id %}" class="btn btn-sm">View</a>
                 <a href="{% url 'admin_edit_user' m.user.id %}" class="btn btn-sm btn-outline">Edit</a>
